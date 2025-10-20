@@ -1,0 +1,134 @@
+.grid-item { 
+  transition: transform 0.3s ease, box-shadow 0.3s ease; 
+}
+.grid-item:hover { 
+  transform: translateY(-4px) scale(1.05); 
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15), 0 0 20px rgba(255,215,0,0.3); /* glow أصفر */
+}
+.loading-spinner { 
+  border: 4px solid #f3f3f3; 
+  border-top: 4px solid #3b82f6; 
+  border-radius: 50%; 
+  width: 24px; 
+  height: 24px; 
+  animation: spin 1s linear infinite; 
+}
+@keyframes spin { 
+  0% { transform: rotate(0deg); } 
+  100% { transform: rotate(360deg); } 
+}
+
+/* Striped table محسن للفواتير */
+tbody tr:nth-child(even) { background-color: #f8fafc; }
+.dark tbody tr:nth-child(even) { background-color: #374151; }
+tbody tr:hover { background-color: #e2e8f0; }
+.dark tbody tr:hover { background-color: #4b5563; }
+thead th { background: linear-gradient(to bottom, #3b82f6, #1d4ed8); }
+
+/* Toast animation مع progress bar */
+@keyframes toastIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes toastOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+#toast.show { animation: toastIn 0.5s ease-out; }
+#toast.hide { animation: toastOut 0.5s ease-in forwards; }
+.progress-bar { transition: width 3s linear; }
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* Slide-in للـ modals */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-50px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.modal-slide-in {
+  animation: slideIn 0.4s ease-out;
+}
+
+/* Bounce لزر الحفظ */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-5px); }
+  60% { transform: translateY(-3px); }
+}
+.bounce {
+  animation: bounce 0.6s ease-out;
+}
+
+/* Smooth transitions عامة */
+* { transition: all 0.3s ease; }
+
+/* Dark mode overrides */
+.dark .bg-gray-100 { background-color: #111827; }
+.dark .text-gray-900 { color: #f9fafb; }
+.dark .bg-blue-50 { background-color: #1f2937; }
+.dark .bg-white { background-color: #1f2937; }
+.dark .bg-gray-50 { background-color: #1f2937; }
+.dark .border-gray-300 { border-color: #4b5563; }
+.dark .bg-blue-200 { background-color: #1e40af; }
+.dark .bg-gray-200 { background-color: #374151; }
+.dark .hover\:bg-gray-100:hover { background-color: #374151; }
+.dark .bg-green-50 { background-color: #064e3b; }
+.dark .divide-gray-300 > * + * { border-color: #4b5563; }
+
+@media (max-width: 768px) { 
+  .grid { grid-template-columns: repeat(2, 1fr); } 
+  .header-div { flex-direction: column; gap: 8px; } 
+}
+
+/* تصغير حجم أيقونات المنتجات */
+.grid-item {
+  height: 50px; /* الحفاظ على الارتفاع المعدل */
+  padding: 8px; /* الحفاظ على الـ padding */
+  font-size: 0.75rem; /* الحفاظ على حجم الخط */
+  width: 90px; /* الحفاظ على العرض المعدل */
+}
+.grid-item span {
+  font-size: 0.65rem; /* الحفاظ على حجم النص الفرعي (السعر) */
+}
+@media (max-width: 768px) {
+  .grid-item {
+    height: 30px; /* الحفاظ على الارتفاع للشاشات الصغيرة */
+    padding: 6px;
+    font-size: 0.7rem;
+    width: 70px; /* الحفاظ على العرض للشاشات الصغيرة */
+  }
+  .grid-item span {
+    font-size: 0.6rem;
+  }
+}
+
+/* تقليل المسافة بين الأيقونات */
+#productsGrid {
+  gap: 4px !important; /* تقليل المسافة من 8px إلى 4px */
+}
+@media (max-width: 768px) {
+  #productsGrid {
+    gap: 2px !important; /* تقليل المسافة إلى 2px على الشاشات الصغيرة */
+  }
+}
+#currentDate, #currentTime {
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.dark #currentDate, .dark #currentTime {
+  color: #d1d5db; /* لون متناسق في الوضع المظلم */
+}
+
+@media (max-width: 768px) {
+  #currentDate, #currentTime {
+    font-size: 0.8rem;
+  }
+}

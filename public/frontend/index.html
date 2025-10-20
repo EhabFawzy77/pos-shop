@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام إدارة مبيعات المحل</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+  <!-- شريط العنوان المحسن (بدون حقل البحث، مع زر للفواتير) -->
+  <div class="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-600 text-white p-4 flex justify-between items-center shadow-2xl relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+    <div class="flex items-center space-x-4 space-x-reverse relative z-10">
+      <svg class="w-8 h-8 text-yellow-300" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
+        <path d="M12 10a2 2 0 100-4 2 2 0 000 4z"/>
+      </svg>
+      <h1 class="text-xl font-bold">ادارة غسيل وزيوت السبارات</h1>
+    </div>
+    <div class="flex space-x-4 space-x-reverse items-center header-div relative z-10">
+      <div class="text-sm bg-white/20 px-3 py-1 rounded-lg backdrop-blur-sm shadow-md">إجمالي اليوم: <span id="dailyIncome" class="font-bold text-green-300">0</span> جنيه</div>
+      <div class="text-sm bg-white/20 px-3 py-1 rounded-lg backdrop-blur-sm shadow-md">إجمالي الأسبوع: <span id="weeklyIncome" class="font-bold text-green-300">0</span> جنيه</div>
+      <button onclick="toggleDarkMode()" class="bg-white/20 p-2 rounded-lg hover:bg-white/30 transition-all shadow-md" title="تبديل الوضع المظلم">
+        <i class="fas fa-moon"></i>
+      </button>
+      <button class="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 flex items-center shadow-lg transition-all" onclick="toggleInvoicesModal()">
+        <i class="fas fa-file-invoice mr-2"></i>عرض الفواتير
+      </button>
+      <button class="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 flex items-center shadow-lg transition-all" onclick="toggleProductsModal()">
+        <i class="fas fa-cog mr-2"></i>إدارة المنتجات
+      </button>
+    </div>
+  </div>
+
+  <div class="flex h-screen overflow-hidden">
+    <!-- المنطقة الرئيسية: شبكة الأزرار -->
+    <div class="flex-1 p-6 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+      <h2 class="font-semibold mb-6 text-lg flex items-center"><i class="fas fa-tags mr-2 text-yellow-600"></i>المنتجات</h2>
+      <div id="productsLoading" class="text-center py-12">
+        <div class="loading-spinner mx-auto mb-4"></div>
+        <p class="text-gray-500 dark:text-gray-400">جاري تحميل المنتجات...</p>
+      </div>
+      <div id="productsGrid" class="grid grid-cols-3 md:grid-cols-5 gap-6 mb-6 hidden">
+      </div>
+      <div id="noProductsMsg" class="text-center py-12 text-gray-500 dark:text-gray-400 hidden">
+        <i class="fas fa-exclamation-triangle text-5xl mb-4 text-yellow-500"></i>
+        <p class="text-lg">لا توجد منتجات</p>
+        <p>أضف من <button onclick="toggleProductsModal()" class="text-blue-600 underline font-semibold">إدارة المنتجات</button></p>
+      </div>
+    </div>
+
+    <!-- اللوحة اليمنى: الفاتورة الحالية -->
+    <div class="w-80 bg-white dark:bg-gray-800 border-l p-6 shadow-lg">
+      <h2 class="font-semibold mb-6 text-lg flex items-center"><i class="fas fa-receipt mr-2 text-green-600"></i>الفاتورة الحالية</h2>
+      <div id="currentSale" class="mb-6 max-h-64 overflow-y-auto space-y-3">
+      </div>
+      <div class="text-2xl font-bold text-green-600 dark:text-green-400 mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg text-center shadow-inner">الإجمالي: <span id="total">0</span> جنيه</div>
+      <input type="text" id="customerInput" placeholder="اسم العميل..." class="w-full p-4 border rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" aria-label="اسم العميل">
+      <button id="saveSale" class="w-full bg-green-500 text-white py-4 rounded-lg hover:bg-green-600 font-semibold flex items-center justify-center shadow-lg transition-all" aria-label="حفظ الفاتورة">
+        <i class="fas fa-save mr-2"></i>حفظ الفاتورة
+      </button>
+      <div class="mt-8 text-xs text-gray-500 dark:text-gray-400 text-center">
+        التاريخ: <span id="currentDate"></span> | <span id="currentTime"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast محسن لرسالة تم الحفظ -->
+  <div id="toast" class="fixed bottom-4 right-4 hidden bg-green-500 text-white px-6 py-4 rounded-lg shadow-xl z-50 flex items-center space-x-2 space-x-reverse">
+    <i class="fas fa-check-circle text-2xl"></i>
+    <span class="flex-1">تم الحفظ بنجاح!</span>
+    <div class="w-full h-1 bg-green-300 rounded-full overflow-hidden">
+      <div class="h-full bg-white w-0 progress-bar"></div>
+    </div>
+    <button onclick="closeToast()" class="text-white hover:text-gray-200 ml-2">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- Modal لعرض الفواتير -->
+  <div id="invoicesModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="toggleInvoicesModal()">
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl w-11/12 md:w-3/4 lg:w-1/2 max-h-[90vh] overflow-y-auto m-4 shadow-2xl modal-slide-in" onclick="event.stopPropagation()">
+      <h2 class="text-2xl font-bold mb-6 flex items-center"><i class="fas fa-file-invoice mr-2 text-blue-600"></i>قائمة الفواتير</h2>
+      <input type="text" placeholder="بحث في الفواتير..." class="w-full p-4 border rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" id="searchInput" oninput="searchInvoices()">
+      <div id="invoicesLoading" class="text-center py-4 hidden">
+        <div class="loading-spinner mx-auto"></div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+          <thead class="bg-blue-200 dark:bg-blue-900/30">
+            <tr>
+              <th class="p-3 text-right border border-gray-300 dark:border-gray-600 font-bold text-gray-800 dark:text-gray-200">المنتج</th>
+              <th class="p-3 text-right border border-gray-300 dark:border-gray-600 font-bold text-gray-800 dark:text-gray-200">الكمية</th>
+              <th class="p-3 text-right border border-gray-300 dark:border-gray-600 font-bold text-gray-800 dark:text-gray-200">السعر</th>
+              <th class="p-3 text-right border border-gray-300 dark:border-gray-600 font-bold text-gray-800 dark:text-gray-200">التاريخ</th>
+            </tr>
+          </thead>
+          <tbody id="invoicesTable" class="divide-y divide-gray-300 dark:divide-gray-600">
+          </tbody>
+        </table>
+      </div>
+      <button onclick="toggleInvoicesModal()" class="mt-6 w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 font-semibold shadow-lg transition-all">إغلاق</button>
+    </div>
+  </div>
+
+  <!-- Modal لإدارة المنتجات -->
+  <div id="productsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="toggleProductsModal()">
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl w-11/12 md:w-3/4 lg:w-1/2 max-h-[90vh] overflow-y-auto m-4 shadow-2xl" onclick="event.stopPropagation()">
+      <h2 class="text-2xl font-bold mb-6 flex items-center"><i class="fas fa-cog mr-2 text-blue-600"></i>إدارة المنتجات</h2>
+      <form id="productForm" class="mb-8 space-y-4">
+        <input type="hidden" id="productId">
+        <input type="text" id="productName" placeholder="اسم المنتج..." class="w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" required>
+        <input type="number" id="productPrice" placeholder="السعر (جنيه)..." class="w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" required>
+        <input type="text" id="productCategory" placeholder="الفئة (اختياري)..." class="w-full p-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+        <div class="flex space-x-3 space-x-reverse">
+          <button type="submit" class="bg-blue-500 text-white px-8 py-4 rounded-lg hover:bg-blue-600 flex-1 font-semibold shadow-lg transition-all">
+            <i class="fas fa-plus mr-2"></i>حفظ
+          </button>
+          <button type="button" onclick="toggleProductsModal()" class="bg-gray-500 text-white px-8 py-4 rounded-lg hover:bg-gray-600 flex-1 font-semibold shadow-lg transition-all">
+            <i class="fas fa-times mr-2"></i>إغلاق
+          </button>
+        </div>
+      </form>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse border border-gray-300 dark:border-gray-600">
+          <thead class="bg-gray-200 dark:bg-gray-700">
+            <tr>
+              <th class="p-4 border border-gray-300 dark:border-gray-600 rounded-t-lg">الاسم</th>
+              <th class="p-4 border border-gray-300 dark:border-gray-600 rounded-t-lg">السعر</th>
+              <th class="p-4 border border-gray-300 dark:border-gray-600 rounded-t-lg">الفئة</th>
+              <th class="p-4 border border-gray-300 dark:border-gray-600 rounded-t-lg">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="productsTable" class="divide-y divide-gray-300 dark:divide-gray-600">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal لتفاصيل الفاتورة -->
+  <div id="invoiceDetailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeInvoiceModal()">
+    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl w-11/12 md:w-3/4 lg:w-1/2 max-h-[90vh] overflow-y-auto m-4 shadow-2xl" onclick="event.stopPropagation()">
+      <h2 class="text-xl font-bold mb-4 flex items-center"><i class="fas fa-file-invoice mr-2 text-blue-600"></i>تفاصيل الفاتورة</h2>
+      <div class="overflow-x-auto mb-4">
+        <table class="w-full text-sm border-collapse border border-gray-300 dark:border-gray-600">
+          <thead class="bg-gray-200 dark:bg-gray-700">
+            <tr>
+              <th class="p-3 border border-gray-300 dark:border-gray-600">المنتج</th>
+              <th class="p-3 border border-gray-300 dark:border-gray-600">الكمية</th>
+              <th class="p-3 border border-gray-300 dark:border-gray-600">السعر</th>
+              <th class="p-3 border border-gray-300 dark:border-gray-600">الإجمالي</th>
+            </tr>
+          </thead>
+          <tbody id="invoiceDetailTable" class="divide-y divide-gray-300 dark:divide-gray-600">
+          </tbody>
+        </table>
+      </div>
+      <div class="text-right font-bold text-xl text-green-600 dark:text-green-400 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">الإجمالي الكلي: <span id="invoiceTotal">0</span> جنيه</div>
+      <button onclick="closeInvoiceModal()" class="mt-6 w-full bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 font-semibold shadow-lg transition-all">إغلاق</button>
+    </div>
+  </div>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'991871b31f82e209',t:'MTc2MDk2MjU2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

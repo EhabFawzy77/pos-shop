@@ -1,6 +1,5 @@
 const API_SALES = "/api/sales";
 const API_PRODUCTS = "/api/products";
-let currentSale = [];
 let products = [];
 let currentInvoiceId = null;
 let allInvoices = [];
@@ -63,27 +62,26 @@ function searchInvoices() {
     const saleDate = new Date(sale.date)
       .toLocaleDateString("ar-EG")
       .toLowerCase();
-    const firstItem = sale.items[0]?.item.toLowerCase() || "";
+    const firstItem = sale.item.toLowerCase();
     return saleDate.includes(query) || firstItem.includes(query);
   });
   tbody.innerHTML = filtered
     .map((sale, index) => {
       const saleDate = new Date(sale.date);
       const isToday = saleDate.toDateString() === new Date().toDateString();
-      const firstItem = sale.items[0] || { item: "-", quantity: 0, price: 0 };
       if (isToday) {
         return `
         <tr class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors fade-in" style="animation-delay: ${
           index * 0.05
         }s;" onclick="showInvoiceDetail('${sale._id}')">
           <td class="p-3 border border-gray-300 dark:border-gray-600">${
-            firstItem.item
+            sale.item
           }</td>
           <td class="p-3 border border-gray-300 dark:border-gray-600">${
-            firstItem.quantity
+            sale.quantity
           }</td>
           <td class="p-3 border border-gray-300 dark:border-gray-600">${
-            firstItem.price
+            sale.price
           } جنيه</td>
           <td class="p-3 border border-gray-300 dark:border-gray-600">${new Date(
             sale.date
@@ -107,7 +105,6 @@ function searchInvoices() {
 }
 
 // تحديث التاريخ والوقت
-// دالة لتحديث التاريخ والوقت
 function updateDateTime() {
   const now = new Date();
   const dateOptions = {
@@ -123,8 +120,8 @@ function updateDateTime() {
     hour12: true,
   };
 
-  const formattedDate = now.toLocaleString("ar-EG", dateOptions); // مثال: "الإثنين، 20 أكتوبر 2025"
-  const formattedTime = now.toLocaleString("ar-EG", timeOptions); // مثال: "02:19 م"
+  const formattedDate = now.toLocaleString("ar-EG", dateOptions);
+  const formattedTime = now.toLocaleString("ar-EG", timeOptions);
 
   const dateElement = document.getElementById("currentDate");
   const timeElement = document.getElementById("currentTime");
@@ -132,13 +129,11 @@ function updateDateTime() {
   if (timeElement) timeElement.textContent = formattedTime;
 }
 
-// شغل التحديث كل ثانية
 setInterval(updateDateTime, 1000);
 
 // استدعِ الدالة عند التحميل
 document.addEventListener("DOMContentLoaded", () => {
-  updateDateTime(); // تحديث أولي
-  // الكود الموجود (مثل productForm submit, loadProducts, إلخ)
+  updateDateTime();
 });
 
 // الحصول على تاريخ اليوم
@@ -189,19 +184,37 @@ async function loadProducts() {
   }
 }
 
+// حفظ المنتج مباشرة عند الضغط
+async function saveProductSale(item, price) {
+  const data = {
+    item,
+    price,
+    quantity: 1,
+    total: price,
+    customer: "", // يمكن إضافة حقل العميل لاحقًا إذا لزم الأمر
+  };
+  try {
+    await fetch(API_SALES, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    loadInvoices();
+    loadDailyIncome();
+    loadWeeklyIncome();
+    showToast();
+    confettiBurst();
+  } catch (err) {
+    alert("خطأ في حفظ الفاتورة: " + err.message);
+  }
+}
+
 function attachProductListeners() {
   document.querySelectorAll(".grid-item").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
       const item = btn.dataset.item;
       const price = parseFloat(btn.dataset.price);
-      const existing = currentSale.find((s) => s.item === item);
-      if (existing) {
-        existing.quantity += 1;
-        existing.total = existing.quantity * existing.price;
-      } else {
-        currentSale.push({ item, quantity: 1, price, total: price });
-      }
-      updateCurrentSale();
+      await saveProductSale(item, price);
     });
   });
 }
@@ -221,9 +234,9 @@ async function loadInvoices() {
       .map((sale, index) => {
         const saleDate = new Date(sale.date);
         return `
-      <tr class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors fade-in" 
-          style="animation-delay: ${index * 0.05}s;" 
-          onclick="showInvoiceDetail('${sale._id}')">
+      <tr class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors fade-in" style="animation-delay: ${
+        index * 0.05
+      }s;" onclick="showInvoiceDetail('${sale._id}')">
         <td class="p-3 border border-gray-300 dark:border-gray-600">${
           sale.item
         }</td>
@@ -233,22 +246,22 @@ async function loadInvoices() {
         <td class="p-3 border border-gray-300 dark:border-gray-600">${
           sale.price
         } جنيه</td>
-        <td class="p-3 border border-gray-300 dark:border-gray-600">${saleDate.toLocaleDateString(
-          "ar-EG"
-        )}</td>
+        <td class="p-3 border border-gray-300 dark:border-gray-600">${new Date(
+          sale.date
+        ).toLocaleDateString("ar-EG")}</td>
       </tr>
     `;
       })
       .join("");
   } catch (err) {
     loading.classList.add("hidden");
-    tbody.innerHTML =
-      '<tr><td colspan="4" class="p-3 text-center text-red-500 dark:text-red-400">خطأ في تحميل الفواتير</td></tr>';
+    alert("خطأ في تحميل الفواتير: " + err.message);
   }
 }
 
-// عرض تفاصيل الفاتورة في الـ modal
+// عرض تفاصيل الفاتورة
 async function showInvoiceDetail(id) {
+  currentInvoiceId = id;
   const modal = document.getElementById("invoiceDetailModal");
   modal.classList.add("modal-slide-in");
   modal.classList.remove("hidden");
@@ -279,62 +292,6 @@ window.closeInvoiceModal = () => {
   modal.classList.remove("modal-slide-in");
 };
 
-// تحديث الفاتورة الحالية
-function updateCurrentSale() {
-  const container = document.getElementById("currentSale");
-  container.innerHTML = currentSale
-    .map(
-      (s, i) => `
-    <div class="flex justify-between items-center p-3 border rounded-lg bg-white dark:bg-gray-800 shadow-sm mb-2 transition-all">
-      <span class="flex items-center"><i class="fas fa-box mr-2 text-blue-500"></i>${s.item} x${s.quantity}</span>
-      <div class="text-right">
-        <span class="font-bold text-green-600 dark:text-green-400">${s.total} جنيه</span>
-        <button onclick="removeItem(${i})" class="ml-3 text-red-500 hover:text-red-700 transition-colors" title="حذف العنصر">
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
-    </div>
-  `
-    )
-    .join("");
-  const total = currentSale.reduce((sum, s) => sum + s.total, 0);
-  document.getElementById("total").textContent = total;
-}
-
-window.removeItem = (index) => {
-  currentSale.splice(index, 1);
-  updateCurrentSale();
-};
-
-async function saveSale() {
-  if (currentSale.length === 0) return alert("لا توجد عناصر!");
-
-  // لكل عنصر في السلة، نحفظه كفاتورة مستقلة
-  for (const s of currentSale) {
-    const data = {
-      item: s.item,
-      price: s.price,
-      quantity: s.quantity,
-      total: s.total,
-      customer: document.getElementById("customerInput").value || "",
-    };
-
-    await fetch(API_SALES, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-  }
-
-  currentSale = [];
-  document.getElementById("customerInput").value = "";
-  updateCurrentSale();
-  loadInvoices();
-  loadDailyIncome();
-  loadWeeklyIncome();
-  showToast();
-}
-
 // Confetti function
 function confettiBurst() {
   for (let i = 0; i < 50; i++) {
@@ -353,7 +310,6 @@ function confettiBurst() {
   }
 }
 
-// تحميل الإجمالي اليومي
 // تحميل الإجمالي اليومي
 async function loadDailyIncome() {
   try {
@@ -481,8 +437,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   };
-
-  document.getElementById("saveSale").addEventListener("click", saveSale);
 
   // تحميل أولي
   loadProducts();

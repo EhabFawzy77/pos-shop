@@ -7,7 +7,7 @@ const SaleSchema = new mongoose.Schema({
   quantity: Number,
   total: Number,
   customer: String,
-  date: { type: Date, default: Date.now, expires: "7d" }, // حذف تلقائي بعد 7 أيام
+  date: { type: Date, default: Date.now, expires: "1d" }, // حذف تلقائي بعد 7 أيام
 });
 
 // تصدير الموديل
